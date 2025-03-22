@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDMS Website with AI Assistant</title>
+    <link rel="stylesheet" href="https://www.idmsinfotech.com/style.css"> <!-- Assuming external styles -->
+    <style>
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            z-index: 1;
+        }
+        .ai-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(145deg, #9333EA, #7928CA);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
+            z-index: 9999;
+            transition: all 0.3s ease;
+        }
+        .ai-button:hover {
+            transform: scale(1.1);
+        }
+        .ai-button img {
+            width: 30px;
+            height: 30px;
+            filter: brightness(0) invert(1);
+        }
+        .floating-window {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 1000px;
+            height: 600px;
+            background: #0F1020;
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(147, 51, 234, 0.3),
+                        inset 0 0 20px rgba(147, 51, 234, 0.2);
+            display: none;
+            overflow: hidden;
+            z-index: 9999;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+        }
+        .floating-window.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-header {
+            padding: 15px 20px;
+            background: #0F1020;
+            border-bottom: 1px solid rgba(147, 51, 234, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h2 {
+            color: #9333EA;
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        .control-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+
+        .red-dot { background: #FF5F57; }
+        .yellow-dot { background: #FFBD2E; }
+        .green-dot { background: #28C941; }
+
+        .right-panel {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 280px;
+            height: 100%;
+            border-left: 1px solid rgba(147, 51, 234, 0.3);
+            background: rgba(147, 51, 234, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 0;
+        }
+
+        .logo-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-top: 80px;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .logo-container {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(145deg, #9333EA, #7928CA);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 25px rgba(147, 51, 234, 0.4);
+        }
+
+        .logo-container img {
+            width: 50px;
+            height: 50px;
+            filter: brightness(0) invert(1);
+        }
+
+        .listening-section {
+            padding: 20px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .listening-status {
+            background: rgba(147, 51, 234, 0.1);
+            padding: 10px 20px;
+            border-radius: 12px;
+            color: #E2E8F0;
+            font-size: 15px;
+            border: 1px solid rgba(147, 51, 234, 0.2);
+            animation: pulse 2s infinite;
+        }
+
+        .chat-messages {
+            height: calc(100% - 120px);
+            padding: 30px;
+            padding-right: 300px;
+            overflow-y: auto;
+            color: #FFFFFF;
+        }
+
+        .message {
+            margin-bottom: 30px;
+            max-width: 90%;
+            line-height: 1.6;
+        }
+
+        .user-message {
+            margin-left: auto;
+            background: #9333EA;
+            padding: 12px 16px;
+            border-radius: 15px 15px 0 15px;
+            color: white;
+            box-shadow: 0 2px 10px rgba(147, 51, 234, 0.2);
+        }
+
+        .assistant-message {
+            background: rgba(147, 51, 234, 0.1);
+            padding: 12px 16px;
+            border-radius: 15px 15px 15px 0;
+            border: 1px solid rgba(147, 51, 234, 0.2);
+            color: #E2E8F0;
+        }
+
+        .input-area {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: #0F1020;
+            border-top: 1px solid rgba(147, 51, 234, 0.2);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 12px;
+            background: rgba(147, 51, 234, 0.1);
+            color: #FFFFFF;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .input-area input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .mic-button {
+            background: linear-gradient(145deg, #9333EA, #7928CA);
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mic-button img {
+            width: 20px;
+            height: 20px;
+            filter: brightness(0) invert(1);
+        }
+
+        .send-button {
+            background: linear-gradient(145deg, #9333EA, #7928CA);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(147, 51, 234, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <iframe src="https://www.idmsinfotech.com"></iframe>
+    
+    <div class="ai-button" onclick="toggleChat()">
+        <img src="https://cdn-icons-png.flaticon.com/512/2782/2782058.png" alt="AI">
+    </div>
+
+    <div class="floating-window" id="chatWindow">
+        <div class="chat-header">
+            <h2>AI Assistant</h2>
+            <div class="window-controls">
+                <div class="control-dot red-dot" onclick="toggleChat()"></div>
+                <div class="control-dot yellow-dot"></div>
+                <div class="control-dot green-dot"></div>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message assistant-message">
+                Hello, how can you help me today?
+            </div>
+            <div class="message user-message">
+                Can you explain how machine learning works?
+            </div>
+            <div class="message assistant-message">
+                Machine learning is a subset of artificial intelligence that allows systems to learn and improve from experience without being explicitly programmed. It focuses on developing algorithms that can access data and use it to learn for themselves.
+            </div>
+        </div>
+        <!-- Right Panel with Logo and Listening Status -->
+        <div class="right-panel">
+            <div class="logo-section">
+                <div class="logo-container">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2782/2782058.png" alt="Gear Icon">
+                </div>
+            </div>
+            <div class="listening-section">
+                <div class="listening-status">
+                    I'm listening...
+                </div>
+            </div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Type your message here..." onkeypress="handleKeyPress(event)">
+            <button class="mic-button" onclick="toggleMic()" id="micButton">
+                <img src="https://cdn-icons-png.flaticon.com/512/709/709682.png" alt="Mic">
+            </button>
+            <button class="send-button" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    
+    <script>
+        function toggleChat() {
+            const chatWindow = document.getElementById('chatWindow');
+            chatWindow.classList.toggle('active');
+        }
+
+        function toggleMic() {
+            const micButton = document.getElementById('micButton');
+            micButton.classList.toggle('active');
+            // Add your microphone functionality here
+        }
+
+        function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const chatMessages = document.getElementById('chatMessages');
+            const message = userInput.value.trim();
+            if (message) {
+                const userMessage = document.createElement('div');
+                userMessage.className = 'message user-message';
+                userMessage.textContent = message;
+                chatMessages.appendChild(userMessage);
+                const aiMessage = document.createElement('div');
+                aiMessage.className = 'message assistant-message';
+                aiMessage.textContent = "I'm listening...";
+                chatMessages.appendChild(aiMessage);
+                userInput.value = '';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+    </script>
+</body>
+</html>
